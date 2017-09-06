@@ -1,5 +1,5 @@
 Genau
-A Processing boilerplate for AxiDraw.
+A Processing boilerplate for AxiDraw
 
 
 -------------------------------------------------------------------------------
@@ -13,6 +13,8 @@ Some timing information is available (TODO).
 Some boundary checking is done and 'manual reset' methods are provided as well.
 A dummy port is provided to test the software without the AxiDraw connected.
 A few helper functions are provided.
+
+NOTE: the default settings are for AxiDraw v2
 
 
 -------------------------------------------------------------------------------
