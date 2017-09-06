@@ -69,5 +69,4 @@ Helpers:
                                   has been detected, null otherwise
     messageLoop()                 a crappy message sync loop "listener"
                                   to throw into Processing’s main draw() loop
-    bezierLength()                'caclculates' the length of a bezier curve
 
