@@ -71,8 +71,6 @@ The main serial queries:
 -------------------------------------------------------------------------------
 Helpers:
 
-    findSerial()                  returns a Serial object if an EBB board
-                                  has been detected, null otherwise
     messageLoop()                 a crappy message sync loop "listener"
                                   to throw into Processing’s main draw() loop
 
