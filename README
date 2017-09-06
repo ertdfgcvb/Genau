@@ -20,7 +20,8 @@ NOTE: the default settings are for AxiDraw v2
 -------------------------------------------------------------------------------
 Init:
     Control c = new Control(this);
-    c.open();
+    Serial p = c.open();
+    if (p != null) println("ok!");
 
 -------------------------------------------------------------------------------
 The main motion methods:

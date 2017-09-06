@@ -21,8 +21,8 @@ void setup() {
   size(400, 400);
   textFont(loadFont("f14.vlw"));
 
-  c = new Control();
-  Serial port = c.open(this);
+  c = new Control(this);
+  Serial port = c.open();
   if (port == null) {
     println("Axidraw not found.");
     // exit();
