@@ -11,6 +11,7 @@
  *   Control.down()
  *   Control.doManualReset()
  *   Control.zero()
+ *   Control.off()
  *
  * EiBotBoard commands reference: 
  * http://evil-mad.github.io/EggBot/ebb.html
@@ -19,6 +20,8 @@
  * 
  * @author Andreas Gysin
  */
+import processing.serial.*;
+
 class Control {
 
   public Serial port;  
@@ -29,7 +32,7 @@ class Control {
   private int delayAfterRaising;               // pen delay in ms
   private int delayAfterLowering;              // pen delay in ms
   private int motorSpeed;                      // motor speed for both steppers [1-5]
- 
+
   private int penUpValue;                      // servo max for raised pen  [1..65535] 
   private int penDownValue;                    // servo min for lowered pen [1..65535] 
 
@@ -43,9 +46,8 @@ class Control {
   private boolean isDown;
   private boolean isZero = true;               // We assume the AxiDraw is already resetted
 
-  Control(Serial port) {
-    this.port = port;
-    echo = new Echo(port);                     // Echo keeps track of all the EBB commands and also act as a dummy port 
+  Control() {    
+    echo = new Echo(null);                     // Echo keeps track of all the EBB commands and also act as a dummy port 
     setMotorSteps();                           // Force step size to 1/16   
     setServo(16000, 19000);                    // Servo min max
     setMotorSpeed(1500);                       // Set the motor speed    
@@ -137,7 +139,7 @@ class Control {
    */
   void doManualReset() {
     isZero = false;
-    motorsOff();
+    off();
     up(true);
   }
 
@@ -282,7 +284,7 @@ class Control {
   /**
    * De-energize both motors.
    */
-  void motorsOff() {       
+  void off() {       
     echo.write("EM,0,0\r");
   }
 
@@ -347,13 +349,71 @@ class Control {
   }
 
   /**
+   * Tries tp opens a port
+   */
+  Serial open(PApplet parent) {
+    Serial p = scanSerial(parent);
+    if (p != null) {
+      echo.setPort(p);
+      echo.enablePort();
+    }
+    return p;
+  }
+
+  /**
    * Closes the port
    */
-  void closePort() {
+  void close() {
     port.clear(); 
     port.stop();
     port = null;
   }
+
+  /**
+   * Helper function: scans all the serial ports abailable trough Serial.list()
+   * and tries to determine if if there is an AxiDraw connected.
+   * NOTE: Tested only on macOS.
+   *
+   * @return Serial An open port if detected, otherwise null.
+   */
+  Serial scanSerial(PApplet parent) {
+
+    final int RATE = 115200; //38400;
+    Serial port = null;
+    String[] ports = Serial.list();
+
+    for (int i=0; i<ports.length; i++) {
+      try {
+        port = new Serial(parent, ports[i], RATE);
+      }
+      catch (Exception e) {
+        println("Serial port " + ports[i] + " could not be initialized... Skipping.");
+        continue;
+      }
+
+      print("Looking for EBB on port: " + ports[i] + "... ");
+      port.clear();
+      port.write("V\r");   // request the version string
+      delay(100);          // give it some breath...
+
+      while (port.available () > 0) {
+        String buf = port.readString();
+        if (buf != null && buf.contains("EBB")) {
+          println("Found!");
+          println("Version string: " + trim(buf));
+          return port;
+        }
+      }
+
+      port.clear();
+      port.stop();
+      port = null;
+      println("EBB not detected.");
+    }
+
+    return null;
+  }  
+
 
   /** 
    * A wrapper for the serial port.
@@ -365,9 +425,13 @@ class Control {
     boolean portEnabled = true;
     boolean bufferEnabled = false;
 
-    public Echo(Serial port) {
-      this.port = port;
+    public Echo(Serial p) {
+      setPort(p);
       clear();
+    }
+    
+    void setPort(Serial p){
+      this.port = p;
     }
 
     void clear() {

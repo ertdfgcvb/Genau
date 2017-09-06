@@ -15,23 +15,19 @@
  * B       Prints echo.buffer
  */
 
-import processing.serial.*;
-
 Control c;
 
 void setup() {
   size(400, 400);
   textFont(loadFont("f14.vlw"));
 
-  Serial port = findSerial();
-
+  c = new Control();
+  Serial port = c.open(this);
   if (port == null) {
     println("Axidraw not found.");
     // exit();
     // return;
   } 
-
-  c = new Control(port);
 }
 
 void draw() {
