@@ -45,8 +45,10 @@ class Control {
 
   private boolean isDown;
   private boolean isZero = true;               // We assume the AxiDraw is already resetted
-
-  Control() {    
+  private PApplet parent;                      // Refernece to the main PApplet (mainly for serial stuff) 
+  
+  Control(PApplet parent) {
+    this.parent = parent;
     echo = new Echo(null);                     // Echo keeps track of all the EBB commands and also act as a dummy port 
     setMotorSteps();                           // Force step size to 1/16   
     setServo(16000, 19000);                    // Servo min max
@@ -349,9 +351,9 @@ class Control {
   }
 
   /**
-   * Tries tp opens a port
+   * Tries to opens a port
    */
-  Serial open(PApplet parent) {
+  public Serial open() {
     Serial p = scanSerial(parent);
     if (p != null) {
       echo.setPort(p);

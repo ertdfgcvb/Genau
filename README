@@ -18,6 +18,11 @@ NOTE: the default settings are for AxiDraw v2
 
 
 -------------------------------------------------------------------------------
+Init:
+    Control c = new Control(this);
+    c.open();
+
+-------------------------------------------------------------------------------
 The main motion methods:
 
     .move(int dx, int dy)         moves the pen by [dx,dy] steps
