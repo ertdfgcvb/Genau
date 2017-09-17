@@ -1,6 +1,6 @@
 /**
  * Genau 1
- * An example of use of the Control class.
+ * An example of interactive use of the Control class.
  * Note:
  * The position coordinates are expressed in motor steps: 
  * 80 steps = 1mm
@@ -12,7 +12,9 @@
  * 1-9     Toggle motor speed
  * CURSORS Move the pen around
  * SPACE   Toggles the pen
- * C       Draw a small circle
+ * C       Draw some circles
+ * X       Draw an oblique cross
+ * D,F,G,H Number of steps 400, 800, 1600, 3200 (cell size)
  * B       Print echo.buffer
  */
 
@@ -26,20 +28,22 @@ void setup() {
   Serial p = c.open();
   if (p == null) {
     println("Axidraw not found.");
-    // exit();
-    // return;
+    exit();
+    return;
   } 
-  c.readPos();  // Read out the steps from the EBB, set internal pos[] accordingly
-  c.up(true);   // Force the pen to be "up" (we don't know the actual positon)
+  c.readPos();       // Read out the steps from the EBB, set internal pos[] accordingly;
+                     // this makes sure that the position is updated when re-launching the program
+                     // so a "reset" (via zero()) is not needed
+  c.up(true);        // Force the pen to be "up" 
 }
 
 void draw() {
 
-   // c.version();
-   // c.querySteps(); // uncomment for some extra info in the console
-   // c.queryMotor();
-   // c.queryPen();
- 
+  // c.version();
+  // c.querysteps(); // Uncomment for some extra info in the console
+  // c.queryMotor();
+  // c.queryPen();
+
   messageLoop(c.port); 
 
   String out = "";
@@ -58,23 +62,20 @@ void draw() {
   text(out, 30, 30);
 }
 
+int steps = 800;             // 800 steps = 1cm
+
 void keyPressed() {
-  
+
   //if(!c.idle()) return;    // Commands can be stacked...
-  
-  int STEPS = 800;           // 800 steps = 1cm
 
   if (keyCode == RIGHT) {
-    c.move(STEPS, 0);
+    c.move(steps, 0);
   } else if (keyCode == LEFT) {
-    c.move(-STEPS, 0);
+    c.move(-steps, 0);
   } else if (keyCode == UP) {
-    c.move(0, -STEPS);
+    c.move(0, -steps);
   } else if (keyCode == DOWN) {
-    c.move(0, STEPS);
-  } else if ( key == 'h') {  // go home
-    delay(c.up());           // wait that the pen is lifted before moving around...
-    c.moveTo(0, 0);
+    c.move(0, steps);
   } else if ( key == ' ') {  // Toggles the pen position
     if (c.pen() == Control.DOWN) {
       c.up();
@@ -91,6 +92,7 @@ void keyPressed() {
       println("ZERO");
     }
   } 
+  //
   else if ( key == '1') c.motorSpeed( 500); // sloow 
   else if ( key == '2') c.motorSpeed(1000); // slow       
   else if ( key == '3') c.motorSpeed(1500); // default               
@@ -100,30 +102,54 @@ void keyPressed() {
   else if ( key == '7') c.motorSpeed(3500); // pretty fast        
   else if ( key == '8') c.motorSpeed(4000); // probably the max useful speed
   else if ( key == '9') c.motorSpeed(4500); // not so precise anymore
-  
+
   else if (key == 'b') {
     String[] commands = split(c.echo.buffer.trim(), '\r');
     int n = 0;
     for (String l : commands) println("["+n+++"]", l);
   } else if (key == 'p') {
-    // c.port.write(c.echo.buffer); // better not... as all commands are relative!
+    // c.port.write(c.echo.buffer);      // better not... as all commands are relative!
   } else if (key == 'c') {
-    int prevState = c.pen();
-    int res   = 64;
-    float rad = STEPS/2; 
-    int time = 0;    // or use c.resetTime()
-    time += c.up();
-    int ox = c.x();
-    int oy = c.y();
-    for (int i=0; i<res+1; i++) {   
-      int x = round(cos(TWO_PI / res * i) * rad);
-      int y = round(sin(TWO_PI / res * i) * rad);
-      time += c.moveTo(ox + x, oy + y);
-      if (i == 0) time += c.down();
+    int time = 0;
+    int ox = c.x();                      // store current x
+    int oy = c.y();                      // store current y
+    int max = steps / 2 / 80;            // max number of circles 
+    int num = floor(random(1, max + 1));    
+    for (int i=0; i<num; i++) {
+      time += circle(ox + steps/2, oy + steps/2, steps/2 - 80 * i);
     }
-    time += c.up(); 
-    time += c.moveTo(ox, oy);                           // go back to the previosu pos
-    if (prevState == Control.DOWN) time += c.down();          // restore the previous pen status 
-    println("Approx time to draw the circle: " + time); // or use c.getApproxTime()
+    time += c.moveTo(ox + steps, oy);    // go back to the previosu pos + 1 tile
+    println("Approx time to draw the circle(s): " + time + "ms");
+  } else if (key == 'x') {    
+    int time = 0;
+    int w = steps;
+    int h = steps;
+    time += c.down();
+    time += c.move(w, h);
+    time += c.up();
+    time += c.move(-w, 0);
+    time += c.down();
+    time += c.move(w, -h);
+    println("Approx time to draw the crossed square: " + time + "ms");
+  } 
+  //
+  else if (key == 'd') steps =  400;
+  else if (key == 'f') steps =  800;
+  else if (key == 'g') steps = 1600;
+  else if (key == 'h') steps = 3200;
+}
+
+
+int circle(int ox, int oy, float radius) {
+  int res  = 64;
+  int time = 0;    // or use c.resetTime()
+  time += c.up();
+  for (int i=0; i<res+1; i++) {   
+    int x = round(cos(TWO_PI / res * i) * radius);
+    int y = round(sin(TWO_PI / res * i) * radius);
+    time += c.moveTo(ox + x, oy + y);
+    if (i == 0) time += c.down();
   }
+  time += c.up(); 
+  return time;
 }

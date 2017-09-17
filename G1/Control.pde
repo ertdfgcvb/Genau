@@ -29,8 +29,8 @@ class Control {
   public Serial port;  
   public Echo echo;
   final private int MOTOR_STEPS = 1;           // hardcoded at 1/16. Always.
-  final public static int UP   = 0;                   // pen status up   (1 for up is equivalent of QP)
-  final public static int DOWN = 1;                   // pen status down (0 for up is equivalent of QP)
+  final public static int UP   = 0;            // pen status up   (1 for up is equivalent of QP)
+  final public static int DOWN = 1;            // pen status down (0 for up is equivalent of QP)
   private int delayAfterRaising;               // pen delay in ms
   private int delayAfterLowering;              // pen delay in ms
   private int motorSpeed;                      // motor speed for both steppers [1-5]
@@ -38,14 +38,14 @@ class Control {
   private int penUpValue;                      // servo max for raised pen  [1..65535] 
   private int penDownValue;                    // servo min for lowered pen [1..65535] 
   private int penStatus = DOWN;                // current status (internal)
-  
+
   private int[] min = new int[]{0, 0};         // asbolute minimum x,y in steps
   private int[] max = new int[]{24000, 17000}; // absolute maximum x,y in steps (around 24000, 17000 for AxiDraw v2)
   private int[] pos = new int[2];              // current x,y position of motors
 
   private int _time;                           // time we are allowed to begin the next movement (when the current move will be complete).
   private int _timeAccumulator;                // accumluates the millis for each move and each delay, can be resetted with resetTime() 
-             
+
   private boolean enabled = true;              // motor status (internal)
   private PApplet parent;                      // Refernece to the main PApplet (mainly for serial stuff) 
 
@@ -56,7 +56,7 @@ class Control {
 
     servo(16000, 19000);                       // Servo min max
     motorSpeed(1500);                          // Set the motor speed    
-    servoDelay(200, 200);                      // Delay before rising and before lowering the pen                    
+    servoDelay(200, 300);                      // Delay before rising and before lowering the pen                    
     addTime(0);                                // Reset the timer
 
     echo.enableBuffer();                       // Enable the internal "echo": all EBB commands are stored in a string 
@@ -79,9 +79,9 @@ class Control {
    *
    * @param Integer beforeRaise, beforeLower
    */
-  void servoDelay(int beforeRaise, int beforeLower) {
-    delayAfterRaising = max(0, beforeRaise);
-    delayAfterLowering = max(0, beforeLower);
+  void servoDelay(int raise, int lower) {
+    delayAfterRaising = max(0, raise);
+    delayAfterLowering = max(0, lower);
     println("delayAfterRaising  = " + delayAfterRaising);
     println("delayAfterLowering = " + delayAfterLowering);
   }
@@ -155,12 +155,12 @@ class Control {
   int[] pos() {
     return new int[]{pos[0], pos[1]};
   }
-  
-  int x(){
+
+  int x() {
     return pos[0];
   }
-  
-  int y(){
+
+  int y() {
     return pos[1];
   }
 
@@ -187,8 +187,9 @@ class Control {
       echo.write("SP,0," + delayAfterRaising + "\r");           
       penStatus = UP;
       addTime(delayAfterRaising);
+      return delayAfterRaising;
     }
-    return delayAfterRaising;
+    return 0;
   }
 
   /**
@@ -202,12 +203,13 @@ class Control {
    * Lowers the pen
    */
   int down() {
-    if  (penStatus == UP) {      
+    if (penStatus == UP) {      
       echo.write("SP,1," + delayAfterLowering + "\r"); 
       penStatus = DOWN;
       addTime(delayAfterLowering);
+      return delayAfterLowering;
     }
-    return delayAfterLowering;
+    return 0;
   }  
 
   /**
