@@ -5,7 +5,8 @@ A Processing boilerplate for AxiDraw
 --------------------------------------------------------------------------------
 This is a simple barebone class which wraps the main EiBotBoard commands
 in a few handy functions without much abstraction.
-The main reason for this is to facilitate the start of new AxiDraw sketches.
+The main reason for this is to facilitate the start of new AxiDraw sketches
+with a special focus on realtime and interactive projects.
 
 The movement and position units are just 1/16 motor steps (Integers)
 where 80 steps = 1mm.
