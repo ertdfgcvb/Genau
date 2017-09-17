@@ -40,7 +40,6 @@ void draw() {
   messageLoop(c.port);
 
   String out = "";
-
   out += "pos[]: " + c.x() + "," + c.y() + " (steps)\n";
   out += "time: " + millis() + "ms\n";
   out += "idle: " + (c.isIdle()) + "\n";
@@ -57,8 +56,10 @@ void draw() {
 }
 
 void keyPressed() {
-
-  int STEPS = 800; // 800 steps = 1cm
+  
+  //if(!c.isIdle()) return;  // Commands can be stacked
+  
+  int STEPS = 800;           // 800 steps = 1cm
 
   if (keyCode == RIGHT) {
     c.move(STEPS, 0);
@@ -106,10 +107,9 @@ void keyPressed() {
     // c.port.write(c.echo.buffer); // better not... as all commands are relative!
   } else if (key == 'c') {
 
-    int res = 64;
+    int res   = 64;
     float rad = STEPS/2; 
-
-    int time = 0; // or use c.resetTime()
+    int time = 0;    // or use c.resetTime()
     time += c.up();
     int ox = c.x();
     int oy = c.y();
@@ -120,6 +120,7 @@ void keyPressed() {
       if (i == 0) time += c.down();
     }
     time += c.up();
+    time += c.moveTo(ox, oy);
     println("Approx time to draw the circle: " + time); // or use c.getApproxTime()
   }
 }
