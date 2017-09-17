@@ -22,12 +22,14 @@ void setup() {
   textFont(loadFont("f14.vlw"));
 
   c = new Control(this);
-  Serial port = c.open();
-  if (port == null) {
+  Serial p = c.open();
+  if (p == null) {
     println("Axidraw not found.");
     // exit();
     // return;
   } 
+  c.readPos();  // Read out the steps, set interbal pos[] accordingly
+  c.up(true);   // Force the pen to be "up" (we don't know the actual positon)
 }
 
 void draw() {
@@ -39,11 +41,11 @@ void draw() {
 
   String out = "";
 
-  out += "pos[]: " + c.getPos()[0] + "," + c.getPos()[1] + " (steps)\n";
+  out += "pos[]: " + c.pos()[0] + "," + c.pos()[1] + " (steps)\n";
   out += "time: " + millis() + "ms\n";
   out += "idle: " + (c.isIdle()) + "\n";
 
-  if (!c.isZero()) {
+  if (!c.enabled()) {
     out += "\nManually move the pen\nto the top left corner... \n\nPress R again when done.";
     background(220, 60, 60);
   } else {
@@ -76,20 +78,25 @@ void keyPressed() {
       c.down();
     }
   } else if (key == 'r') {   // manually reset the AxiDraw, press again to set "Zero"
-    if (c.isZero()) {
-      c.doManualReset();
-    } else {                
+    if (c.enabled()) {
+      c.up(true);            // force the pen up
+      c.off();
+    } else {   
+      c.on();
       c.zero();
+      println("ZERO");
     }
-  } else if ( key == '1') c.setMotorSpeed( 100);  
-  else if ( key == '2') c.setMotorSpeed( 250);        
-  else if ( key == '3') c.setMotorSpeed( 500);        
-  else if ( key == '4') c.setMotorSpeed( 750);        
-  else if ( key == '5') c.setMotorSpeed(1000);        
-  else if ( key == '6') c.setMotorSpeed(1250);        
-  else if ( key == '7') c.setMotorSpeed(1500);      
-  else if ( key == '8') c.setMotorSpeed(1750);        
-  else if ( key == '9') c.setMotorSpeed(2000);
+  } 
+  else if ( key == '1') c.motorSpeed( 500); // sloow 
+  else if ( key == '2') c.motorSpeed(1000); // slow       
+  else if ( key == '3') c.motorSpeed(1500); // default               
+  else if ( key == '4') c.motorSpeed(2000); // ok for most cases       
+  else if ( key == '5') c.motorSpeed(2500); // quick       
+  else if ( key == '6') c.motorSpeed(3000); // quicker      
+  else if ( key == '7') c.motorSpeed(3500); // pretty fast        
+  else if ( key == '8') c.motorSpeed(4000); // probably the max useful speed
+  else if ( key == '8') c.motorSpeed(4500); // not so precise
+  else if ( key == '9') c.motorSpeed(5000); // even less precise
 
   else if (key == 'b') {
     String[] commands = split(c.echo.buffer.trim(), '\r');

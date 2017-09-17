@@ -9,7 +9,7 @@
  *   Control.moveTo(x, y)
  *   Control.up()
  *   Control.down()
- *   Control.doManualReset()
+ *   Control.on()
  *   Control.zero()
  *   Control.off()
  *
@@ -26,8 +26,7 @@ class Control {
 
   public Serial port;  
   public Echo echo;
-
-  final private int STEPS = 1;                 // hardcoded at 1/16. Always.
+  final private int MOTOR_STEPS = 1;           // hardcoded at 1/16. Always.
 
   private int delayAfterRaising;               // pen delay in ms
   private int delayAfterLowering;              // pen delay in ms
@@ -44,20 +43,21 @@ class Control {
   private int _timeAccumulator;                // accumluates the millis for each move and each delay, can be resetted with resetTime() 
 
   private boolean isDown;
-  private boolean isZero = true;               // We assume the AxiDraw is already resetted
+  private boolean enabled = true;              // We assume the AxiDraw is already resetted
   private PApplet parent;                      // Refernece to the main PApplet (mainly for serial stuff) 
-  
-  Control(PApplet parent) {
-    this.parent = parent;
-    echo = new Echo(null);                     // Echo keeps track of all the EBB commands and also act as a dummy port 
-    setMotorSteps();                           // Force step size to 1/16   
-    setServo(16000, 19000);                    // Servo min max
-    setMotorSpeed(1500);                       // Set the motor speed    
-    setServoDelay(200, 200);                   // Delay before rising and before lowering the pen 
-    setPosFromQuery();                         // Read out the steps, set pos[] accordingly                
-    addTime(0);                                // reset the timer
 
-    echo.enableBuffer();
+
+  Control(PApplet parent) {
+    this.parent = parent;                      // Keep track of the PApplet: needed for serial setup
+    echo = new Echo(null);                     // Echo keeps track of all the EBB commands and also act as a dummy port 
+
+    servo(16000, 19000);                       // Servo min max
+    motorSpeed(1500);                          // Set the motor speed    
+    servoDelay(200, 200);                      // Delay before rising and before lowering the pen                    
+    addTime(0);                                // Reset the timer
+
+    echo.enableBuffer();                       // Enable the internal "echo": all EBB commands are stored in a string 
+    on();                                      // Enable motors and force step size to 1/16
   }
 
   /**
@@ -65,8 +65,8 @@ class Control {
    *
    * @param Integer s The number of steps.
    */
-  void setMotorSpeed(int s) {
-    motorSpeed = constrain(s, 100, 2000);
+  void motorSpeed(int s) {
+    motorSpeed = constrain(s, 100, 5000);
     println("motorSpeed = " + motorSpeed);
   }
 
@@ -76,19 +76,11 @@ class Control {
    *
    * @param Integer beforeRaise, beforeLower
    */
-  void setServoDelay(int beforeRaise, int beforeLower) {
+  void servoDelay(int beforeRaise, int beforeLower) {
     delayAfterRaising = max(0, beforeRaise);
     delayAfterLowering = max(0, beforeLower);
     println("delayAfterRaising  = " + delayAfterRaising);
     println("delayAfterLowering = " + delayAfterLowering);
-  }
-
-  /**
-   * Force step size at 1/16 all the time. 
-   * Should never be called, except in the constructor.
-   */
-  private void setMotorSteps() {
-    echo.write("EM," + STEPS + "\r");
   }
 
   /**
@@ -99,7 +91,7 @@ class Control {
    * @params Integer down, up 
    */
   // Configure servo limits (and speed):
-  void setServo(int down, int up) {
+  void servo(int down, int up) {
     penUpValue   = constrain(up, 1, 65535);
     penDownValue = constrain(down, 1, 65535);
     echo.write("SC,5," + penUpValue + "\r");    // SC,5,servo_max   (1 to 65535, def: 16000), sets the "Pen UP"   position    
@@ -113,9 +105,12 @@ class Control {
    * Queries the step position and sets the return values into pos[]. 
    * Works only when a correct manual reset has been done.
    */
-  void setPosFromQuery() {
-    if (port == null || !port.active()) return;
+  public void readPos() {
     print("Querying Step position... ");
+    if (port == null || !port.active()) {
+      println("port not open!");
+      return;
+    }
     delay(100);
     port.clear();
     port.write("QS\r");
@@ -136,26 +131,14 @@ class Control {
   }
 
   /**
-   * De-energizes both motors to allow a manual reset. 
-   * Call zero() when done.   
-   */
-  void doManualReset() {
-    isZero = false;
-    off();
-    up(true);
-  }
-
-  /**
    * Marks the current pen location as (0,0) in step coordinates. 
    * Is usually combined (called after) with doManualReset().
    * NOTE: Manually move the motor carriage to the upper left corner before calling this command.
    */
-  void zero() {
-    if (isZero) return;           // need a manual reset before...
+  void zero() {    
     pos[0] = 0;  
     pos[1] = 0;
-    isZero = true;
-    int delay = move(50, 50);   // add a micro offset for precision!
+    int delay = move(50, 50);     // add a micro offset for precision!
     delay(delay + 20);            // wait before resetting...
     echo.write("CS\r");            
     pos[0] = 0;                   // reset the position (the micro offset can be ignored...)
@@ -166,8 +149,8 @@ class Control {
     addTime(0);
   }  
 
-  int[] getPos() {
-    return pos;
+  int[] pos() {
+    return new int[]{pos[0], pos[1]};
   }
 
   private void addTime(int t) {
@@ -175,7 +158,7 @@ class Control {
     _timeAccumulator += t;
   }
 
-  public int getApproxTime() {
+  public int approxTime() {
     return _timeAccumulator;  // TODO...
   }
 
@@ -224,13 +207,11 @@ class Control {
    * @return Integer Evaluation of elapsed time. 
    */
   int move(int dx, int dy) {
-    if (!isZero) return 0;           // need a manual reset before...
 
     int mx = constrain(dx, min[0] - pos[0], max[0] - pos[0]);
     int my = constrain(dy, min[1] - pos[1], max[1] - pos[1]);
 
     int travelTime = 0; // motor travel time in millis (max of x or y)
-
 
     if ((mx != 0) || (my != 0)) {   
       pos[0] += mx;
@@ -265,13 +246,13 @@ class Control {
   }
 
   /**
-   * Used to check if the AxiDraw has been resetted manually (top-left).
+   * Returns the motor state...
    * By default we assume this has been done prior startup.
    *
    * @return Boolean 
    */
-  boolean isZero() {
-    return isZero;
+  boolean enabled() {
+    return enabled;
   }
 
   /**
@@ -288,6 +269,12 @@ class Control {
    */
   void off() {       
     echo.write("EM,0,0\r");
+    enabled = false;
+  }
+
+  void on() {
+    echo.write("EM," + MOTOR_STEPS + "\r");
+    enabled = true;
   }
 
   /**
@@ -354,12 +341,12 @@ class Control {
    * Tries to opens a port
    */
   public Serial open() {
-    Serial p = scanSerial(parent);
-    if (p != null) {
-      echo.setPort(p);
+    port = scanSerial(parent);    
+    if (port != null) {
+      echo.setPort(port);
       echo.enablePort();
     }
-    return p;
+    return port;
   }
 
   /**
@@ -381,12 +368,12 @@ class Control {
   Serial scanSerial(PApplet parent) {
 
     final int RATE = 115200; //38400;
-    Serial port = null;
+    Serial p = null;
     String[] ports = Serial.list();
 
     for (int i=0; i<ports.length; i++) {
       try {
-        port = new Serial(parent, ports[i], RATE);
+        p = new Serial(parent, ports[i], RATE);
       }
       catch (Exception e) {
         println("Serial port " + ports[i] + " could not be initialized... Skipping.");
@@ -394,22 +381,22 @@ class Control {
       }
 
       print("Looking for EBB on port: " + ports[i] + "... ");
-      port.clear();
-      port.write("V\r");   // request the version string
+      p.clear();
+      p.write("V\r");   // request the version string
       delay(100);          // give it some breath...
 
-      while (port.available () > 0) {
-        String buf = port.readString();
+      while (p.available () > 0) {
+        String buf = p.readString();
         if (buf != null && buf.contains("EBB")) {
           println("Found!");
           println("Version string: " + trim(buf));
-          return port;
+          return p;
         }
       }
 
-      port.clear();
-      port.stop();
-      port = null;
+      p.clear();
+      p.stop();
+      p = null;
       println("EBB not detected.");
     }
 
@@ -431,8 +418,8 @@ class Control {
       setPort(p);
       clear();
     }
-    
-    void setPort(Serial p){
+
+    void setPort(Serial p) {
       this.port = p;
     }
 
