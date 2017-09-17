@@ -20,9 +20,11 @@ void messageLoop(Serial port) {
         }
       }
       if (a.length() > 0) {
-        String[] c = a.split(terminator + "");            // Do something with the fetched messaged:
+        String[] c = a.split(terminator + ""); // Do something with the fetched messaged:
         for (String d : c) {
-          println("AxiDraw says [" + millis() + "ms]: " + d.trim() );
+          d = d.trim();
+          if (d.equals("OK")) continue;        // Skip all the "OK" messages from AxiDraw 
+          println("AxiDraw says [" + millis() + "ms]: " + d );
         }
       }
     }

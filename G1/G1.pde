@@ -9,10 +9,11 @@
  *         manually move the head top-left and press R again. 
  *         This is necessary only the first time, as afterwards 
  *         the steps are queried from the controller.
- * SPACE   Toggles the pen
  * 1-9     Toggle motor speed
  * CURSORS Move the pen around
- * B       Prints echo.buffer
+ * SPACE   Toggles the pen
+ * C       Draw a small circle
+ * B       Print echo.buffer
  */
 
 Control c;
@@ -28,21 +29,23 @@ void setup() {
     // exit();
     // return;
   } 
-  c.readPos();  // Read out the steps, set interbal pos[] accordingly
+  c.readPos();  // Read out the steps from the EBB, set internal pos[] accordingly
   c.up(true);   // Force the pen to be "up" (we don't know the actual positon)
 }
 
 void draw() {
 
-  // c.querySteps();
-  // c.queryMotor();
-
-  messageLoop(c.port);
+   // c.version();
+   // c.querySteps(); // uncomment for some extra info in the console
+   // c.queryMotor();
+   // c.queryPen();
+ 
+  messageLoop(c.port); 
 
   String out = "";
   out += "pos[]: " + c.x() + "," + c.y() + " (steps)\n";
   out += "time: " + millis() + "ms\n";
-  out += "idle: " + (c.isIdle()) + "\n";
+  out += "idle: " + (c.idle()) + "\n";
 
   if (!c.enabled()) {
     out += "\nManually move the pen\nto the top left corner... \n\nPress R again when done.";
@@ -57,7 +60,7 @@ void draw() {
 
 void keyPressed() {
   
-  //if(!c.isIdle()) return;  // Commands can be stacked
+  //if(!c.idle()) return;    // Commands can be stacked...
   
   int STEPS = 800;           // 800 steps = 1cm
 
@@ -73,7 +76,7 @@ void keyPressed() {
     delay(c.up());           // wait that the pen is lifted before moving around...
     c.moveTo(0, 0);
   } else if ( key == ' ') {  // Toggles the pen position
-    if (c.isDown()) {
+    if (c.pen() == Control.DOWN) {
       c.up();
     } else {
       c.down();
@@ -96,9 +99,8 @@ void keyPressed() {
   else if ( key == '6') c.motorSpeed(3000); // quicker      
   else if ( key == '7') c.motorSpeed(3500); // pretty fast        
   else if ( key == '8') c.motorSpeed(4000); // probably the max useful speed
-  else if ( key == '8') c.motorSpeed(4500); // not so precise
-  else if ( key == '9') c.motorSpeed(5000); // even less precise
-
+  else if ( key == '9') c.motorSpeed(4500); // not so precise anymore
+  
   else if (key == 'b') {
     String[] commands = split(c.echo.buffer.trim(), '\r');
     int n = 0;
@@ -106,7 +108,7 @@ void keyPressed() {
   } else if (key == 'p') {
     // c.port.write(c.echo.buffer); // better not... as all commands are relative!
   } else if (key == 'c') {
-
+    int prevState = c.pen();
     int res   = 64;
     float rad = STEPS/2; 
     int time = 0;    // or use c.resetTime()
@@ -119,8 +121,9 @@ void keyPressed() {
       time += c.moveTo(ox + x, oy + y);
       if (i == 0) time += c.down();
     }
-    time += c.up();
-    time += c.moveTo(ox, oy);
+    time += c.up(); 
+    time += c.moveTo(ox, oy);                           // go back to the previosu pos
+    if (prevState == Control.DOWN) time += c.down();          // restore the previous pen status 
     println("Approx time to draw the circle: " + time); // or use c.getApproxTime()
   }
 }

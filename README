@@ -2,7 +2,7 @@ Genau
 A Processing boilerplate for AxiDraw
 
 
--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 This is a simple barebone class which wraps the main EiBotBoard commands
 in a few handy functions without much abstraction.
 The main reason for this is to facilitate the start of new AxiDraw sketches.
@@ -17,13 +17,13 @@ A few helper functions are provided.
 NOTE: the default settings are for AxiDraw v2
 
 
--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 Init:
     Control c = new Control(this);
     Serial p = c.open();
     if (p != null) println("ok!");
 
--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 The main motion methods:
 
     .move(int dx, int dy)         moves the pen by [dx,dy] steps
@@ -31,35 +31,38 @@ The main motion methods:
                                   assumes a reset has been done
     .up()                         raises the pen
     .down()                       lowers the pen
-    .doManualReset()              de-energises the motors
+    .off()                        de-energises the motors
                                   to allow manual reset of the pen
     .zero()                       sets the zero, aka home
-    .motorsOff()                  de-energises the motors
+    .on()                         energises the motors
 
 
--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 The main set methods:
 
-    .setMotorSpeed(int s)         sets the motor speed (100..2000)
-    .setServoDelay(int r, int l)  sets the delay (in ms) before raising
-                                  and after lowering of the pen
-    .setSevo(int d, int u)        sets the down and up values
-                                  of the servo (1..65535)
-    .setPosFromQuery()            reads the current step positions (via QS)
-                                  from the board and sets them locally
+    .motorSpeed(int s)             sets the motor speed (100..2000)
+    .servoDelay(int r, int l)      sets the delay (in ms) before raising
+                                   and after lowering of the pen
+    .servo(int d, int u)           sets the down and up values
+                                   of the servo (1..65535)
+    .readPos()                     reads the current step positions (via QS)
+                                   from the board and sets them locally
 
 
--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 The main get methods:
 
-    .getPos()                     returns the local positions, in steps
-    .isIdle()                     returns true if the pen is not moving
-                                  (works only for one command at a time)
-    .isZero()                     returns true if the AxiDraw
-                                  has been manually resetted (default)
+    .pos()                         returns the local positions (int[2]), in steps
+    .x()                           returns the local x position (int), in steps
+    .y()                           returns the local y position (int), in steps
+    .idle()                        returns true if the pen is not moving
+                                   (works only for one command at a time)
+    .enabled()                     returns true if the AxiDraw
+                                   has been manually resetted (default)
+    .pen()                         returns the pen status (Control.UP or Control.DOWN)
 
 
--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 The main serial queries:
 
     .queryPen()
@@ -68,7 +71,7 @@ The main serial queries:
     .version()
 
 
--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 Helpers:
 
     messageLoop()                 a crappy message sync loop "listener"

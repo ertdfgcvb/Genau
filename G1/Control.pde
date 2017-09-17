@@ -29,23 +29,24 @@ class Control {
   public Serial port;  
   public Echo echo;
   final private int MOTOR_STEPS = 1;           // hardcoded at 1/16. Always.
-
+  final public static int UP   = 0;                   // pen status up   (1 for up is equivalent of QP)
+  final public static int DOWN = 1;                   // pen status down (0 for up is equivalent of QP)
   private int delayAfterRaising;               // pen delay in ms
   private int delayAfterLowering;              // pen delay in ms
   private int motorSpeed;                      // motor speed for both steppers [1-5]
 
   private int penUpValue;                      // servo max for raised pen  [1..65535] 
   private int penDownValue;                    // servo min for lowered pen [1..65535] 
-
+  private int penStatus = DOWN;                // current status (internal)
+  
   private int[] min = new int[]{0, 0};         // asbolute minimum x,y in steps
   private int[] max = new int[]{24000, 17000}; // absolute maximum x,y in steps (around 24000, 17000 for AxiDraw v2)
   private int[] pos = new int[2];              // current x,y position of motors
 
   private int _time;                           // time we are allowed to begin the next movement (when the current move will be complete).
   private int _timeAccumulator;                // accumluates the millis for each move and each delay, can be resetted with resetTime() 
-
-  private boolean isDown;
-  private boolean enabled = true;              // We assume the AxiDraw is already resetted
+             
+  private boolean enabled = true;              // motor status (internal)
   private PApplet parent;                      // Refernece to the main PApplet (mainly for serial stuff) 
 
 
@@ -182,9 +183,9 @@ class Control {
    * @param Boolean force when true bypasses the isDown test. Useful for initial reset.
    */
   int up(boolean force) {  
-    if (isDown == true || force) {
+    if (penStatus == DOWN || force) {
       echo.write("SP,0," + delayAfterRaising + "\r");           
-      isDown = false;
+      penStatus = UP;
       addTime(delayAfterRaising);
     }
     return delayAfterRaising;
@@ -201,9 +202,9 @@ class Control {
    * Lowers the pen
    */
   int down() {
-    if  (isDown == false) {      
+    if  (penStatus == UP) {      
       echo.write("SP,1," + delayAfterLowering + "\r"); 
-      isDown = true;
+      penStatus = DOWN;
       addTime(delayAfterLowering);
     }
     return delayAfterLowering;
@@ -251,7 +252,7 @@ class Control {
    *
    * @return Boolean 
    */
-  boolean isIdle() {    
+  boolean idle() {    
     return _time > millis() == false;
   }
 
@@ -270,8 +271,8 @@ class Control {
    *
    * @return Boolean 
    */
-  boolean isDown() {
-    return isDown;
+  int pen() {
+    return penStatus;
   }
 
   /**
@@ -315,6 +316,7 @@ class Control {
    * It will return PenStatus of 1 if the pen is up and 0 if the pen is down. 
    * If a pen up/down command is pending in the FIFO, 
    * it will only report the new state of the pen after the pen move has been started.
+   * NOTE: the above is pasted from the EBB manual and is currently not correct: 1 is down, 0 is up
    */
   void queryPen() {
     if (port == null || !port.active()) return;
