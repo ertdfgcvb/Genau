@@ -10,8 +10,10 @@
  *   Control.up()
  *   Control.down()
  *   Control.on()
- *   Control.zero()
  *   Control.off()
+ *   Control.zero()
+ *   Control.x();
+ *   Control.y();
  *
  * EiBotBoard commands reference: 
  * http://evil-mad.github.io/EggBot/ebb.html
@@ -151,6 +153,14 @@ class Control {
 
   int[] pos() {
     return new int[]{pos[0], pos[1]};
+  }
+  
+  int x(){
+    return pos[0];
+  }
+  
+  int y(){
+    return pos[1];
   }
 
   private void addTime(int t) {

@@ -41,7 +41,7 @@ void draw() {
 
   String out = "";
 
-  out += "pos[]: " + c.pos()[0] + "," + c.pos()[1] + " (steps)\n";
+  out += "pos[]: " + c.x() + "," + c.y() + " (steps)\n";
   out += "time: " + millis() + "ms\n";
   out += "idle: " + (c.isIdle()) + "\n";
 
@@ -69,7 +69,7 @@ void keyPressed() {
   } else if (keyCode == DOWN) {
     c.move(0, STEPS);
   } else if ( key == 'h') {  // go home
-    delay(c.up());     // wait that the pen is lifted before moving around...
+    delay(c.up());           // wait that the pen is lifted before moving around...
     c.moveTo(0, 0);
   } else if ( key == ' ') {  // Toggles the pen position
     if (c.isDown()) {
@@ -106,17 +106,17 @@ void keyPressed() {
     // c.port.write(c.echo.buffer); // better not... as all commands are relative!
   } else if (key == 'c') {
 
-    int cx = 5000;
-    int cy = 5000;
-    int res = 1000;
-    float rad = random(2000, 3000);
+    int res = 64;
+    float rad = STEPS/2; 
 
     int time = 0; // or use c.resetTime()
     time += c.up();
+    int ox = c.x();
+    int oy = c.y();
     for (int i=0; i<res+1; i++) {   
-      int x = round(cx + cos(TWO_PI / res * i) * rad);
-      int y = round(cy + sin(TWO_PI / res * i) * rad);
-      time += c.moveTo(x, y);
+      int x = round(cos(TWO_PI / res * i) * rad);
+      int y = round(sin(TWO_PI / res * i) * rad);
+      time += c.moveTo(ox + x, oy + y);
       if (i == 0) time += c.down();
     }
     time += c.up();
