@@ -1,12 +1,17 @@
 /**
- * Genau 1
+ * Genau 1 - Manual Plotter
  * An example of interactive use of the Control class.
+ * 
+ * Use the cursor keys to draw some lines, space bar to raise lower the pen.
+ * Some extra paramters can be set.
+ *
  * Note:
  * The position coordinates are expressed in motor steps: 
  * 80 steps = 1mm
+ *
  * Keys:
- * R       If not resetted press R to reset the AxiDraw, 
- *         manually move the head top-left and press R again. 
+ * F1      If not resetted press F1 to reset the AxiDraw, 
+ *         manually move the head top-left and press F1 again. 
  *         This is necessary only the first time, as afterwards 
  *         the steps are queried from the controller.
  * 1-9     Toggle motor speed
@@ -23,24 +28,24 @@ Control c;
 void setup() {
   size(400, 400);
   textFont(loadFont("f14.vlw"));
-
-  c = new Control(this);
-  Serial p = c.open();
-  if (p == null) {
+  
+  c = new Control(this);  // Initialize the control class
+  Serial p = c.open();    // Open the serial port
+  if (p == null) {  
     println("Axidraw not found.");
-    exit();
+    exit();               // No AxiDraw - no joy!
     return;
   } 
-  c.readPos();       // Read out the steps from the EBB, set internal pos[] accordingly;
-                     // this makes sure that the position is updated when re-launching the program
-                     // so a "reset" (via zero()) is not needed
-  c.up(true);        // Force the pen to be "up" 
+  c.readPos();            // Read out the steps from the EBB, set internal pos[] accordingly;
+                          // this makes sure that the position is updated when re-launching the program
+                          // so a "reset" (via zero()) is not needed
+  c.up(true);             // Force the pen to be "up" 
 }
 
 void draw() {
 
   // c.version();
-  // c.querysteps(); // Uncomment for some extra info in the console
+  // c.querysteps();      // Uncomment for some extra info in the console
   // c.queryMotor();
   // c.queryPen();
 
@@ -52,7 +57,7 @@ void draw() {
   out += "idle: " + (c.idle()) + "\n";
 
   if (!c.enabled()) {
-    out += "\nManually move the pen\nto the top left corner... \n\nPress R again when done.";
+    out += "\nManually move the pen\nto the top left corner... \n\nPress F1 again when done.";
     background(220, 60, 60);
   } else {
     background(220);
@@ -65,9 +70,9 @@ void draw() {
 int steps = 800;             // 800 steps = 1cm
 
 void keyPressed() {
-
-  //if(!c.idle()) return;    // Commands can be stacked...
-
+  
+  if (!c.idle()) return;
+   
   if (keyCode == RIGHT) {
     c.move(steps, 0);
   } else if (keyCode == LEFT) {
@@ -82,7 +87,7 @@ void keyPressed() {
     } else {
       c.down();
     }
-  } else if (key == 'r') {   // manually reset the AxiDraw, press again to set "Zero"
+  } else if (keyCode == 112) {   // F1: manually reset the AxiDraw, press again to set "Zero"
     if (c.enabled()) {
       c.up(true);            // force the pen up
       c.off();
@@ -138,7 +143,6 @@ void keyPressed() {
   else if (key == 'g') steps = 1600;
   else if (key == 'h') steps = 3200;
 }
-
 
 int circle(int ox, int oy, float radius) {
   int res  = 64;
