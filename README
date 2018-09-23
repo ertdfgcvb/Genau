@@ -19,13 +19,13 @@ NOTE: the default settings are for AxiDraw v2
 
 
 --------------------------------------------------------------------------------
-G1 - Manual Plotter
+Example G1 - Manual Plotter
 An example of interactive use of the Control class: 
 use the cursor keys to draw, space to rise / lower the pen at different speeds.
 
 
 --------------------------------------------------------------------------------
-G2 - Typewriter 
+Example G2 - Typewriter 
 Use the AxiDraw as a realtime typewriter.
 
 
