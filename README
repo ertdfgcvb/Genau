@@ -31,6 +31,7 @@ Use the AxiDraw as a realtime typewriter.
 
 --------------------------------------------------------------------------------
 Init:
+
     Control c = new Control(this);
     Serial p = c.open();
     if (p != null) println("ok!");
